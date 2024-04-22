@@ -58,10 +58,10 @@ def login():
                 return redirect(url_for('index'))
             else:
                 msg = 'Wrong username or password'
-    return render_template ('my_account.html', username = session['username'])
+        return render_template ('my_account.html')
 
 #button in heading
-@app.route('/signuout', methods = ['GET', 'POST'])
+@app.route('/signout', methods = ['GET', 'POST'])
 def logout():
     if request.method == 'POST':
         session.clear()
@@ -71,7 +71,6 @@ def logout():
 @app.route('/my_account', methods= ['get', 'post'])
 def my_account_page():
     if 'username' in session:
-
         return render_template('my_account.html', username = session['username'])
     else:
         return redirect(url_for('login'))
@@ -96,15 +95,24 @@ def create_account():
 
 
 #Create Prodcuts
-@app.route('/create_products', methods=['GET'])
-def create_get_request():
-    return render_template('add_product')
 
-@app.route('/create_products', methods=['POST'])
+@app.route('/create_products', methods=['POST', 'GET'])
 def post_products():
-    conn.execute(text("INSERT INTO product values (:title, :description, :images, :warrenty_period, :category, :colors, :sizes, :inventory)"), request.form)
-    conn.commit()
-    return render_template('add_product')
+    if 'username' in session:
+        account = conn.execute(text("SELECT * FROM account WHERE username = :username"), {"username": session['username']})
+        user_data = account.fetchone()
+        if user_data and (user_data['role'] == 'Vendor' or user_data['role'] == 'Admin'):
+            if request.method == 'POST':
+                conn.execute(text("INSERT INTO product (title, description, images, warranty_period, category, colors, sizes, inventory) VALUES (:title, :description, :images, :warranty_period, :category, :colors, :sizes, :inventory)"), request.form)
+                conn.commit()
+                return render_template('add_product.html')
+            else:
+                return 'Invalid request method. Only POST requests are allowed.'
+        else:
+            return 'Unauthorized access. You must be either a Vendor or an Admin to post products.'
+    else:
+        # return 'Unauthorized access. Please log in first.'
+        return render_template('add_product.html')
 
 #edit prodcuts
 @app.route('/edit', methods=['GET'])
@@ -113,12 +121,12 @@ def edit():
 
 @app.route('/edit', methods=['POST'])
 def edit_products():
-    upd = conn.execute(text("select * from product where  = :id"), request.form).all()
+    upd = conn.execute(text("select * from product where product_id = :product_id"), request.form).all()
     if not upd:
         return render_template('update.html', search_info="Does not exist")
     conn.execute(text("update boat set name=:name, type=:type, owner_id=:owner_id, rental_price=:rental_price where id=:id"), request.form)
     conn.commit()
-    return render_template('update.html', search_info=upd[0:])
+    return render_template('edit_product.html', search_info=upd[0:])
 
 #delete products
 
