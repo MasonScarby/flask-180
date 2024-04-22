@@ -9,7 +9,7 @@ engine = create_engine(conn_str, echo = True)
 conn = engine.connect()
 app.secret_key = 'secret key'
 
-# USER PANEL
+
 # Home page
 @app.route('/')
 def homepage():
@@ -21,10 +21,10 @@ def login():
     if request.method == 'POST' and 'username' in request.form and 'password' in request.form:
         username = request.form['username']
         password = request.form['password']
-        account = conn.execute(text("SELECT * FROM users WHERE username = :username AND password = :password"), request.form)
+        account = conn.execute(text("SELECT * FROM account WHERE username = :username AND password = :password"), request.form)
         user_data = account.fetchone()
         if not account:
-            toBeR = conn.execute(text("Select username from  where username = :username "), {'username': user_data[0]})
+            toBeR = conn.execute(text("Select username from account where username = :username "), {'username': user_data[0]})
             toBeUse = toBeR.fetchone()
             if username == toBeUse[0] and password == toBeUse[6]:
                 session['loggedin'] = True
@@ -45,22 +45,39 @@ def login():
                 return redirect(url_for('index'))
             else:
                 msg = 'Wrong username or password'
+        elif account:
+            if username == user_data[0] == "Vendor":
+                session['loggedin'] = True
+                session['Username'] = "Vendor"
+                return redirect(url_for('admin_home'))
+            elif username == user_data[0] and password == user_data[6]:
+                session['loggedin'] = True
+                session['Username'] = user_data[0]
+                session["Name"] = f"{user_data[1]} {user_data[2]}"
+                msg = 'Login success!'
+                return redirect(url_for('index'))
+            else:
+                msg = 'Wrong username or password'
+    return render_template ('my_account.html', username = session['username'])
 
-
-
-@app.route('/logout')
+#button in heading
+@app.route('/signuout', methods = ['GET', 'POST'])
 def logout():
-    session.pop('username', None)
-    return redirect(url_for('homepage'))
+    if request.method == 'POST':
+        session.clear()
+        return redirect(url_for('create_account'))
 
-@app.route('/accounts_page')
-def accounts_page():
+#accounts page
+@app.route('/my_account', methods= ['get', 'post'])
+def my_account_page():
     if 'username' in session:
-        return render_template('accounts_page.html')
+
+        return render_template('my_account.html', username = session['username'])
     else:
         return redirect(url_for('login'))
+    
 
-
+#create/ register account 
 @app.route('/create_acc', methods=['GET', 'POST'])
 def create_account():
     if request.method == 'POST':
@@ -77,9 +94,46 @@ def create_account():
     else:
         return render_template('create_acc.html')
 
-@app.route('/')
-def home():
-    return "Welcome to the homepage"
+
+#Create Prodcuts
+@app.route('/create_products', methods=['GET'])
+def create_get_request():
+    return render_template('add_product')
+
+@app.route('/create_products', methods=['POST'])
+def post_products():
+    conn.execute(text("INSERT INTO product values (:title, :description, :images, :warrenty_period, :category, :colors, :sizes, :inventory)"), request.form)
+    conn.commit()
+    return render_template('add_product')
+
+#edit prodcuts
+@app.route('/edit', methods=['GET'])
+def edit():
+    return render_template('edit_product.html')
+
+@app.route('/edit', methods=['POST'])
+def edit_products():
+    upd = conn.execute(text("select * from product where  = :id"), request.form).all()
+    if not upd:
+        return render_template('update.html', search_info="Does not exist")
+    conn.execute(text("update boat set name=:name, type=:type, owner_id=:owner_id, rental_price=:rental_price where id=:id"), request.form)
+    conn.commit()
+    return render_template('update.html', search_info=upd[0:])
+
+#delete products
+
+
+@app.route('/delete_product', methods=["POST", "GET"])
+def delete_return():
+     if request.method == 'POST':
+        sear = conn.execute(text("select * from product where product_id = :product_id"), request.form).all()
+        if not sear:
+            return render_template('delete.html', search_info="Does not exist")
+        conn.execute(text("delete from product where product_id = :product_id"), request.form)
+        conn.commit()
+        return render_template('delete.html', search_info=sear[0:])
+     return render_template('delete.html')
+
 
 # @app.route('/my_account', methods=['GET'])
 # def my_account():
