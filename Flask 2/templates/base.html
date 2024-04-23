@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <link rel="stylesheet" href="../static/header.css">
     <title>BASE</title>
+    <script src="main.js"></script>
 </head>
 <style>
 
@@ -29,7 +30,6 @@
                 <input type="password" name="password" value="" placeholder="password" required>
                 <input type="submit" name="loginButton" value="LOGIN">
             </form>
-
             <button class="barItem input" action = '/signout' style="margin-left:10px;">
                 <a href="">Sign Out</a>
             </button>
@@ -132,6 +132,26 @@
         </div>
     </div>
 </footer>
+<script>
+    
 
+function login() {
+    let email = document.getElementById("email").value;
+    let pass = document.getElementById("pass").value;
+
+    if (localStorage.getItem(email)) {
+        if (pass == localStorage.getItem(email)) {
+            location.replace("menu.html");
+            alert("Login Successful");
+        } else if (pass == "") {
+            alert("Login Failed please enter your password");
+        }
+    } else if (email == "") {
+        alert("Login Failed please enter your email");
+    } else if (localStorage.getItem(email) == null || pass == "") {
+        alert("Login Failed Unknown credential combination");
+    }
+}
+</script>
 </body>
 </html>
