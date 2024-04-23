@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, text
 from random import randint
 
 app = Flask(__name__)
-conn_str = 'mysql://root:Cookiebear1@localhost/180final'
+conn_str = 'mysql://root:IMatornado$2023@localhost/180final'
 engine = create_engine(conn_str, echo = True)
 conn = engine.connect()
 app.secret_key = 'secret key'
@@ -18,47 +18,36 @@ def homepage():
 # Login & logout
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST' and 'username' in request.form and 'password' in request.form:
+    if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        account = conn.execute(text("SELECT * FROM account WHERE username = :username AND password = :password"), request.form)
+        account = conn.execute(text("SELECT * FROM account WHERE username = :username"), {'username': username})
         user_data = account.fetchone()
-        if not account:
-            toBeR = conn.execute(text("Select username from account where username = :username "), {'username': user_data[0]})
-            toBeUse = toBeR.fetchone()
-            if username == toBeUse[0] and password == toBeUse[6]:
-                session['loggedin'] = True
-                session['Username'] = toBeUse[0]
-                session["Name"] = f"{toBeUse[1]} {toBeUse[2]}"
-                session["WaitingForApproval"] = True
-                return redirect(url_for('wait'))
-        elif account:
-            if username == user_data[0] == "Admin":
+        
+        if user_data:
+            if username == "Admin":
                 session['loggedin'] = True
                 session['Username'] = "Admin"
                 return redirect(url_for('admin_home'))
-            elif username == user_data[0] and password == user_data[6]:
-                session['loggedin'] = True
-                session['Username'] = user_data[0]
-                session["Name"] = f"{user_data[1]} {user_data[2]}"
-                msg = 'Login success!'
-                return redirect(url_for('index'))
-            else:
-                msg = 'Wrong username or password'
-        elif account:
-            if username == user_data[0] == "Vendor":
+            elif username == "Vendor":
                 session['loggedin'] = True
                 session['Username'] = "Vendor"
-                return redirect(url_for('admin_home'))
-            elif username == user_data[0] and password == user_data[6]:
+                return redirect(url_for('vendor_home'))
+            elif password == user_data.password:
                 session['loggedin'] = True
-                session['Username'] = user_data[0]
-                session["Name"] = f"{user_data[1]} {user_data[2]}"
+                session['Username'] = user_data.username
+                session['Name'] = f"{user_data.first} {user_data.last}"
                 msg = 'Login success!'
-                return redirect(url_for('index'))
+                print(session)
+                return redirect(url_for('login'))
             else:
                 msg = 'Wrong username or password'
-        return render_template ('my_account.html')
+        else:
+            msg = 'User does not exist'
+        
+        return render_template('my_account.html', msg=msg)
+
+    return render_template('my_account.html')
 
 #button in heading
 @app.route('/signout', methods = ['GET', 'POST'])
