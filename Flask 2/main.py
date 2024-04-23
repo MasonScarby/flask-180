@@ -54,7 +54,7 @@ def login():
 def logout():
     if request.method == 'POST':
         session.clear()
-        return redirect(url_for('create_account'))
+        return redirect(url_for('login'))
 
 #accounts page
 @app.route('/my_account', methods= ['get', 'post'])
